@@ -16,16 +16,13 @@ private:
 
 public:
     void generateKeys(int keySize = 1024);
-
+    
     std::pair<BigInt, BigInt> getPublicKey() const;
-
     std::pair<BigInt, BigInt> getPrivateKey() const;
 
     BigInt RSA_encrypt(const BigInt& message) const;
-
     BigInt RSA_decrypt(const BigInt& ciphertext) const;
 
     BigInt sign(const BigInt& message) const;
-
     BigInt verify(const BigInt& signature) const;
 };
