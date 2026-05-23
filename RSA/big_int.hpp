@@ -49,4 +49,7 @@ public:
     static BigInt random(int numBits);
     std::string toString() const;
     void toBits(int key[64]) const;
+    const std::vector<uint32_t>& getDigits() const {
+        return digits;
+    }
 };
