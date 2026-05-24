@@ -61,21 +61,43 @@ namespace utils {
         BigInt n;
     };
 
-    inline void saveKeysToFile(
-        const std::string& filename,
-        const KeyPair& keys
-    ) {
+        inline std::string bigIntToDecimal(BigInt num) {
+        if (num == BigInt(0)) {
+            return "0";
+        }
+
+        bool negative = false;
+        if (num < BigInt(0)) {
+            negative = true;
+            num = -num;
+        }
+
+        std::string result;
+
+        while (num > BigInt(0)) {
+            BigInt digit = num % BigInt(10);
+            result.push_back('0' + std::stoi(digit.toString(), nullptr, 16));
+            num = num / BigInt(10);
+        }
+
+        if (negative) {
+            result.push_back('-');
+        }
+
+        std::reverse(result.begin(), result.end());
+        return result;
+    }
+
+    inline void saveKeysToFile(const std::string& filename, const KeyPair& keys) {
         std::ofstream file(filename);
 
         if (!file.is_open()) {
-            throw std::runtime_error(
-                "Cannot save keys"
-            );
+            throw std::runtime_error("Cannot save keys");
         }
 
-        file << "n=" << keys.n.toString() << "\n";
-        file << "e=" << keys.e.toString() << "\n";
-        file << "d=" << keys.d.toString() << "\n";
+        file << "n=" << bigIntToDecimal(keys.n) << "\n";
+        file << "e=" << bigIntToDecimal(keys.e) << "\n";
+        file << "d=" << bigIntToDecimal(keys.d) << "\n";
     }
 
     inline KeyPair loadKeysFromFile(
@@ -113,18 +135,27 @@ namespace utils {
     // BLOCK SIZE
     // =====================================================
 
-    inline size_t getCipherBlockSize(
-        const BigInt& n
-    ) {
-        std::vector<uint32_t> digits = n.getDigits();
+   inline size_t getPlainBlockSize(const BigInt& n) {
+        size_t k = 0;
 
-        return digits.size() * 4;
-    }
+        BigInt limit(1);
 
-    inline size_t getPlainBlockSize(
-        const BigInt& n
-    ) {
-        return getCipherBlockSize(n) - 1;
+        while (limit < n) {
+            limit = limit * BigInt(256);
+            k++;
+        }
+
+        if (k == 0) {
+            return 1;
+        }
+
+        size_t blockSize = k - 1;
+
+        if (blockSize == 0) {
+            return 1;
+        }
+
+        return blockSize;
     }
 
     // =====================================================
@@ -152,26 +183,17 @@ namespace utils {
     // MESSAGE SPLITTING
     // =====================================================
 
-    inline std::vector<std::vector<uint8_t>>
-    splitBytesIntoBlocks(
-        const std::vector<uint8_t>& data,
-        const BigInt& n
-    ) {
+    inline std::vector<std::vector<uint8_t>> splitBytesIntoBlocks(
+        const std::vector<uint8_t>& data, const BigInt& n) {
         size_t blockSize = getPlainBlockSize(n);
 
         std::vector<std::vector<uint8_t>> blocks;
 
         for (size_t i = 0; i < data.size(); i += blockSize) {
 
-            size_t end = std::min(
-                i + blockSize,
-                data.size()
-            );
+            size_t end = std::min(i + blockSize, data.size());
 
-            std::vector<uint8_t> block(
-                data.begin() + i,
-                data.begin() + end
-            );
+            std::vector<uint8_t> block(data.begin() + i, data.begin() + end);
 
             applyPadding(block, blockSize);
 
